@@ -1,5 +1,6 @@
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import RedditSecrets from './redditSecrets';
 
 const useStyles = makeStyles({
   root: {
@@ -21,7 +22,11 @@ const useStyles = makeStyles({
   },
 
   list: {
-  }
+  },
+
+  sentiment: {
+
+  },
 });
 
 function App() {
@@ -30,11 +35,9 @@ function App() {
   return (
     <div className={classes.root}>
       <header className={classes.header}>
-        <p>
-          <p>🚀🚀💎🤲💎🤲🚀🚀</p>
-              When Moon?
-          <p>🚀🚀💎🤲💎🤲🚀🚀</p>
-        </p>
+        <p>🚀🚀💎🤲💎🤲🚀🚀</p>
+            When Moon?
+        <p>🚀🚀💎🤲💎🤲🚀🚀</p>
       </header>
 
       <div className={classes.todos}>
@@ -47,6 +50,9 @@ function App() {
         </ul>
       </div>
 
+      <div className={classes.sentiment}>
+
+      </div>
     </div>
   );
 }

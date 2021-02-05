@@ -5,6 +5,8 @@
 /.pnp
 .pnp.js
 
+redditSecrets.ts
+
 # testing
 /coverage
 
