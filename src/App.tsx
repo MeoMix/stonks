@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import snoowrap from 'snoowrap';
 import RedditSecrets from './redditSecrets';
 
 const useStyles = makeStyles({
@@ -27,10 +28,49 @@ const useStyles = makeStyles({
   sentiment: {
 
   },
+
+  redditSentiment: {
+
+  }
 });
+
+const reddit = new snoowrap(RedditSecrets);
+
+type Post = {
+  id: string,
+  link: string,
+  text: string,
+  score: number,
+}
 
 function App() {
   const classes = useStyles();
+  const [topPostData, setTopPostData] = useState<Post[]>([]);
+
+  useEffect(() => {
+    async function loadReddit() {
+      const subreddit = reddit.getSubreddit("SatoshiStreetBets");
+      const topPosts = await subreddit.getTop({ time: 'hour', limit: 20 });
+
+      const topPostData = topPosts.map((post) => {
+        return {
+          id: post.id,
+          link: post.url,
+          text: post.title,
+          score: post.score
+        };
+      });
+
+      setTopPostData(topPostData);
+    
+      // const thread = await topPosts[0].expandReplies({ limit: 10, depth: 10 });
+    
+      // console.log("comment count", thread.comments.length);
+      // thread.comments.forEach((comment) => console.log(comment.body));
+    }
+
+    loadReddit();
+  }, []);
 
   return (
     <div className={classes.root}>
@@ -51,7 +91,14 @@ function App() {
       </div>
 
       <div className={classes.sentiment}>
-
+        <header className={classes.redditSentiment}>
+          r/SatoshiStreetBets Sentiment (okay, well, actually, just some top posts for now)
+        </header>
+        <ul>
+          {
+            topPostData.map(entry => (<li> {entry.text}</li>))
+          }
+        </ul>
       </div>
     </div>
   );
