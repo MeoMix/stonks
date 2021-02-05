@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import snoowrap from 'snoowrap';
+import CoinGecko from 'coingecko-api';
+
 import RedditSecrets from './redditSecrets';
 
 const useStyles = makeStyles({
@@ -34,7 +36,8 @@ const useStyles = makeStyles({
   }
 });
 
-const reddit = new snoowrap(RedditSecrets);
+const RedditClient = new snoowrap(RedditSecrets);
+const CoinGeckoClient = new CoinGecko();
 
 type Post = {
   id: string,
@@ -49,7 +52,7 @@ function App() {
 
   useEffect(() => {
     async function loadReddit() {
-      const subreddit = reddit.getSubreddit("SatoshiStreetBets");
+      const subreddit = RedditClient.getSubreddit("SatoshiStreetBets");
       const topPosts = await subreddit.getTop({ time: 'hour', limit: 20 });
 
       const topPostData = topPosts.map((post) => {
@@ -72,10 +75,25 @@ function App() {
     loadReddit();
   }, []);
 
+  const [ethereumPrice, setEthereumPrice] = useState<number>(0);
+  useEffect(() => {
+    async function loadCoinGecko() {
+      const { data: { ethereum } } = await CoinGeckoClient.simple.price({
+        ids: ['ethereum'],
+        vs_currencies: ['usd'],
+      });
+
+      setEthereumPrice(ethereum.usd);
+    }
+
+    loadCoinGecko();
+  }, []);
+
   return (
     <div className={classes.root}>
       <header className={classes.header}>
         <p>🚀🚀💎🤲💎🤲🚀🚀</p>
+            Ethereum is ${ethereumPrice} <br />
             When Moon?
         <p>🚀🚀💎🤲💎🤲🚀🚀</p>
       </header>
@@ -84,6 +102,7 @@ function App() {
         TODO
         <ul className={classes.list}>
           <li>Add support for monitoring SSB sentiment</li>
+          <li>Add helpful pricing information for favorite coins?</li>
           <li>Add basic calendar for tracking upcoming plays</li>
           <li>Add ability to evaluate efficacy of past-due calendar entries</li>
           <li>Stretch - add support for tracking active positions, gains, and losses</li>
