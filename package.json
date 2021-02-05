@@ -1,5 +1,6 @@
 {
   "name": "stonks",
+  "homepage": "http://MeoMix.github.io/stonks",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -20,7 +21,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": [
@@ -41,6 +44,7 @@
     ]
   },
   "devDependencies": {
-    "@material-ui/core": "^4.11.3"
+    "@material-ui/core": "^4.11.3",
+    "gh-pages": "^3.1.0"
   }
 }
