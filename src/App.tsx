@@ -1,24 +1,52 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { makeStyles } from '@material-ui/core/styles';
+
+const useStyles = makeStyles({
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: '#282c34',
+    minHeight: '100vh',
+    fontSize: 'calc(10px + 2vmin)',
+    color: 'white',
+    alignItems: 'center',
+  },
+
+  header: {
+    textAlign: 'center',
+  },
+
+  todos: {
+    display: 'flex',
+  },
+
+  list: {
+  }
+});
 
 function App() {
+  const classes = useStyles();
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+    <div className={classes.root}>
+      <header className={classes.header}>
         <p>
-          Edit <code>src/App.tsx</code> and save to reload.
+          <p>🚀🚀💎🤲💎🤲🚀🚀</p>
+              When Moon?
+          <p>🚀🚀💎🤲💎🤲🚀🚀</p>
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
       </header>
+
+      <div className={classes.todos}>
+        TODO
+        <ul className={classes.list}>
+          <li>Add support for monitoring SSB sentiment</li>
+          <li>Add basic calendar for tracking upcoming plays</li>
+          <li>Add ability to evaluate efficacy of past-due calendar entries</li>
+          <li>Stretch - add support for tracking active positions, gains, and losses</li>
+        </ul>
+      </div>
+
     </div>
   );
 }
