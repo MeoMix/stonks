@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
-import snoowrap from 'snoowrap';
-import CoinGecko from 'coingecko-api';
-
-import RedditSecrets from './redditSecrets';
+import axios from 'axios';
 
 const useStyles = makeStyles({
   root: {
@@ -23,21 +21,7 @@ const useStyles = makeStyles({
   todos: {
     display: 'flex',
   },
-
-  list: {
-  },
-
-  sentiment: {
-
-  },
-
-  redditSentiment: {
-
-  }
 });
-
-const RedditClient = new snoowrap(RedditSecrets);
-const CoinGeckoClient = new CoinGecko();
 
 type Post = {
   id: string,
@@ -52,24 +36,9 @@ function App() {
 
   useEffect(() => {
     async function loadReddit() {
-      const subreddit = RedditClient.getSubreddit("SatoshiStreetBets");
-      const topPosts = await subreddit.getTop({ time: 'hour', limit: 20 });
+      const { data: { ssb } } = await axios.get('http://localhost:8000/ssb');
 
-      const topPostData = topPosts.map((post) => {
-        return {
-          id: post.id,
-          link: post.url,
-          text: post.title,
-          score: post.score
-        };
-      });
-
-      setTopPostData(topPostData);
-    
-      // const thread = await topPosts[0].expandReplies({ limit: 10, depth: 10 });
-    
-      // console.log("comment count", thread.comments.length);
-      // thread.comments.forEach((comment) => console.log(comment.body));
+      setTopPostData(ssb);
     }
 
     loadReddit();
@@ -78,16 +47,30 @@ function App() {
   const [ethereumPrice, setEthereumPrice] = useState<number>(0);
   useEffect(() => {
     async function loadCoinGecko() {
-      const { data: { ethereum } } = await CoinGeckoClient.simple.price({
-        ids: ['ethereum'],
-        vs_currencies: ['usd'],
-      });
+      const { data: { ethereum } } = await axios.get('http://localhost:8000/coingecko');
 
       setEthereumPrice(ethereum.usd);
     }
 
     loadCoinGecko();
   }, []);
+
+  const [counter, setCounter] = useState<number>(-1);
+  useEffect(() => {
+    async function loadCounter() {
+      const { data: { counter } } = await axios.get('http://localhost:8000/counter');
+
+      setCounter(counter);
+    }
+
+    loadCounter();
+  }, []);
+
+  async function handleClick() {
+    const { data: { counter } } = await axios.post('http://localhost:8000/counter');
+
+    setCounter(counter);
+  }
 
   return (
     <div className={classes.root}>
@@ -98,9 +81,14 @@ function App() {
         <p>🚀🚀💎🤲💎🤲🚀🚀</p>
       </header>
 
+      <div>
+        Counter: {counter}
+        <Button onClick={handleClick}>Increment Counter</Button>
+      </div>
+
       <div className={classes.todos}>
         TODO
-        <ul className={classes.list}>
+        <ul>
           <li>Add support for monitoring SSB sentiment</li>
           <li>Add helpful pricing information for favorite coins?</li>
           <li>Add basic calendar for tracking upcoming plays</li>
@@ -109,13 +97,13 @@ function App() {
         </ul>
       </div>
 
-      <div className={classes.sentiment}>
-        <header className={classes.redditSentiment}>
+      <div>
+        <header>
           r/SatoshiStreetBets Sentiment (okay, well, actually, just some top posts for now)
         </header>
         <ul>
           {
-            topPostData.map(entry => (<li> {entry.text}</li>))
+            topPostData.map(entry => (<li key={entry.id}> {entry.text}</li>))
           }
         </ul>
       </div>
