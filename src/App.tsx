@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
+import { Custom } from './BasicCandlestickChart';
+import { IOHLCData } from "./data/iOHLCData";
+import { } from '@react-financial-charts/core';
+
 import axios from 'axios';
 
 const useStyles = makeStyles({
@@ -12,6 +16,7 @@ const useStyles = makeStyles({
     fontSize: 'calc(10px + 2vmin)',
     color: 'white',
     alignItems: 'center',
+    overflow: 'hidden',
   },
 
   header: {
@@ -21,90 +26,186 @@ const useStyles = makeStyles({
   todos: {
     display: 'flex',
   },
+
+  chartContainer: {
+    width: '60%',
+  },
 });
 
-type Post = {
-  id: string,
-  link: string,
-  text: string,
-  score: number,
-}
+const isDev = false;
+const urlBase = isDev ? 'http://localhost:8000/' : 'https://whenmoon-stonksdb.herokuapp.com/';
 
 function App() {
   const classes = useStyles();
-  const [topPostData, setTopPostData] = useState<Post[]>([]);
+  const [ethereumOHLC, setEthereumOHLC] = useState<IOHLCData[]>();
 
-  useEffect(() => {
-    async function loadReddit() {
-      const { data: { ssb } } = await axios.get('http://localhost:8000/ssb');
+  async function reveal() {
+    setDoneState('pending');
 
-      setTopPostData(ssb);
+    for (let i = 0; i < 7; i++) {
+      await incrementCounter();
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
+  }
 
-    loadReddit();
-  }, []);
+  async function updateState(counter: number, ethereum: any, seed: number) {
+    // setCounter(counter);
+    setSeed(seed)
 
-  const [ethereumPrice, setEthereumPrice] = useState<number>(0);
+    // @ts-ignore
+    const parsedData = ethereum.map(([timestamp, open, high, low, close]) => {
+      return {
+          date: new Date(timestamp),
+          open,
+          high,
+          low,
+          close,
+      };
+    });
+
+    setEthereumOHLC(parsedData);
+  }
+
   useEffect(() => {
     async function loadCoinGecko() {
-      const { data: { ethereum } } = await axios.get('http://localhost:8000/coingecko');
+      const { data: { ethereum  } } = await axios.get(`${urlBase}coingecko`);
 
-      setEthereumPrice(ethereum.usd);
+      // @ts-ignore
+      const parsedData = ethereum.map(([timestamp, open, high, low, close]) => {
+        return {
+            date: new Date(timestamp),
+            open,
+            high,
+            low,
+            close,
+        };
+      });
+
+      setEthereumOHLC(parsedData);
     }
 
     loadCoinGecko();
   }, []);
 
-  const [counter, setCounter] = useState<number>(-1);
+  const [streak, setStreak] = useState<number>(0);
   useEffect(() => {
     async function loadCounter() {
-      const { data: { counter } } = await axios.get('http://localhost:8000/counter');
+      const { data: { counter, ethereum, seed  } } = await axios.get(`${urlBase}counter`);
 
-      setCounter(counter);
+      await updateState(counter, ethereum, seed);
     }
 
     loadCounter();
   }, []);
 
-  async function handleClick() {
-    const { data: { counter } } = await axios.post('http://localhost:8000/counter');
+  const [doneState, setDoneState] = useState<'win' | 'lose' | 'push' | 'pending' | 'deciding' | undefined>();
 
-    setCounter(counter);
+  const goalRef = useRef<'now' | 'later'>();
+  async function handleNowClick() {
+    goalRef.current = 'now';
+    await reveal();
+
+    setDoneState('deciding');
+  }
+
+  async function handleLaterClick() {
+    goalRef.current = 'later';
+    await reveal();
+    setDoneState('deciding');
+  }
+
+  const previousCloseRef = useRef<number | undefined>()
+  useEffect(() => {
+    // Get the close and compare it to close, if higher - win
+    if (doneState === 'pending' && previousCloseRef.current === undefined) {
+      previousCloseRef.current = ethereumOHLC![ethereumOHLC!.length - 1].close;
+    }
+
+    if (doneState === 'deciding') {
+      const close = ethereumOHLC![ethereumOHLC!.length - 1].close;
+
+      if (previousCloseRef.current! > close) {
+        setDoneState(goalRef.current === 'now' ? 'lose' : 'win');
+      } else if (previousCloseRef.current! < close) {
+        setDoneState(goalRef.current === 'now' ? 'win' : 'lose');
+      } else {
+        setDoneState('push');
+      }
+    }
+
+    if (doneState === 'win' || doneState === 'lose' || doneState === 'push') {
+      previousCloseRef.current = undefined;
+    }
+  }, [ethereumOHLC, doneState]);
+
+  useEffect(() => {
+    if (doneState === 'win') {
+      setStreak(streak + 1);
+    } else if (doneState === 'lose') {
+      setStreak(0);
+    }
+  }, [doneState])
+
+  async function incrementCounter() {
+    const { data: { counter, ethereum, seed  } } = await axios.post(`${urlBase}counter`);
+
+    await updateState(counter, ethereum, seed);
+  }
+
+  const [seed, setSeed] = useState<number>();
+  async function handleNextChartClick() {
+    const { data: { counter, ethereum, seed } } = await axios.get(`${urlBase}coingecko-random`);
+
+    await updateState(counter, ethereum, seed);
+    setDoneState(undefined);
   }
 
   return (
     <div className={classes.root}>
       <header className={classes.header}>
         <p>🚀🚀💎🤲💎🤲🚀🚀</p>
-            Ethereum is ${ethereumPrice} <br />
             When Moon?
         <p>🚀🚀💎🤲💎🤲🚀🚀</p>
       </header>
 
       <div>
-        Counter: {counter}
-        <Button onClick={handleClick}>Increment Counter</Button>
+        Streak: {streak}
       </div>
-
-      <div className={classes.todos}>
-        TODO
-        <ul>
-          <li>Add support for monitoring SSB sentiment</li>
-          <li>Add helpful pricing information for favorite coins?</li>
-          <li>Add basic calendar for tracking upcoming plays</li>
-          <li>Add ability to evaluate efficacy of past-due calendar entries</li>
-          <li>Stretch - add support for tracking active positions, gains, and losses</li>
-        </ul>
+      <div>
+        {doneState === 'win' ? 'YOU WON!' : ''}
+        {doneState === 'lose' ? 'YOU LOST!' : ''}
       </div>
 
       <div>
-        <header>
-          r/SatoshiStreetBets Sentiment (okay, well, actually, just some top posts for now)
-        </header>
+        <Button onClick={handleNowClick} color="primary" variant="contained" disabled={doneState !== undefined}>Now</Button>
+        <Button onClick={handleLaterClick} color="secondary" variant="contained" disabled={doneState !== undefined}>Later</Button>
+      </div>
+
+      <div>
+        Seed: {seed}
+        <Button onClick={handleNextChartClick} variant="contained">Next Chart</Button>
+      </div>
+
+      { ethereumOHLC &&
+        <div className={classes.chartContainer}>
+          <Custom data={ethereumOHLC} />
+        </div>
+      }
+
+      <div className={classes.todos}>
+        GOALS
         <ul>
-          {
-            topPostData.map(entry => (<li key={entry.id}> {entry.text}</li>))
-          }
+          <li>✅Show chart of current Ethereum price using Coingecko API</li>
+          <li>✅Show chart of random Ethereum price using Coingecko API</li>
+          <li>✅Hide data on chart and add button to reveal hidden data</li>
+          <li>✅Let user provide input - does hidden data go up or down</li>
+          <li>✅Record user input</li>
+          <li>✅Reveal hidden chart data</li>
+          <li>Record result of user input + revealed data</li>
+          <li>Persist results of chart</li>
+          <li>Reveal statistics for all users for given chart</li>
+          <li>Allow for non-Ethereum coins to be included</li>
+          <li>Make shiny.</li>
         </ul>
       </div>
     </div>
